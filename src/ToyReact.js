@@ -9,7 +9,11 @@ class ElementWrapper {
     if (name.match(/^on([\s\S]+)$/)) {
       this.root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value);
     } else {
-      this.root.setAttribute(name, value);
+      if (name === 'className') {
+        this.root.setAttribute('class', value);
+      } else {
+        this.root.setAttribute(name, value);
+      }
     }
   }
 
@@ -64,8 +68,17 @@ export class Component {
   }
 
   reRender() {
-    this._range.deleteContents();
-    this[RENDER_TO_DOM](this._range);
+    let oldRange = this._range;
+
+    // 创建一个新 range，放到老 range start 的位置
+    let range = document.createRange();
+    range.setStart(oldRange.startContainer, oldRange.startOffset);
+    range.setEnd(oldRange.startContainer, oldRange.startOffset);
+    this[RENDER_TO_DOM](range);
+
+    // 将老的 range 移到新插入 range 位置的后面，然后移除老 range
+    oldRange.setStart(range.endContainer, range.endOffset);
+    oldRange.deleteContents();
   }
 
   setState(newState) {
@@ -105,6 +118,10 @@ export function createElement(type, attributes, ...children) {
     for(let child of children) {
       if (typeof child === 'string') {
         child = new TextWrapper(child);
+      }
+
+      if (child === null) {
+        continue;
       }
 
       if ((typeof child === 'object') && (child instanceof Array)) {
