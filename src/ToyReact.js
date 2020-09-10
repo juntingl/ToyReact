@@ -1,3 +1,5 @@
+const RENDER_TO_DOM = Symbol('render to DOM');
+
 class ElementWrapper {
   constructor (type) {
     this.root = document.createElement(type);
@@ -8,13 +10,27 @@ class ElementWrapper {
   }
 
   appendChild(component) {
-    this.root.appendChild(component.root)
+    let range = document.createRange();
+    range.setStart(this.root, this.root.childNodes.length); // 为 0 ，parentElement 的第一个节点到最后一个节点
+    range.setEnd(this.root, this.root.childNodes.length);
+    range.deleteContents();// 清空
+    component[RENDER_TO_DOM](range);
+  }
+
+  [RENDER_TO_DOM](range) {
+    range.deleteContents();
+    range.insertNode(this.root);
   }
 }
 
 class TextWrapper {
   constructor (content) {
     this.root = document.createTextNode(content);
+  }
+
+  [RENDER_TO_DOM](range) {
+    range.deleteContents();
+    range.insertNode(this.root);
   }
 }
 
@@ -23,6 +39,7 @@ export class Component {
     this.props = Object.create(null);
     this.children = [];
     this._root = null;
+    this._range = null;
   }
 
   setAttribute(name, value) {
@@ -33,11 +50,10 @@ export class Component {
     this.children.push(component)
   }
 
-  get root() {
-    if (!this._root) {
-      this._root = this.render().root;
-    }
-    return this._root;
+  // 需要指定重新渲染的位置 Range API
+  [RENDER_TO_DOM](range) {
+    this._range = range;
+    this.render()[RENDER_TO_DOM](range);
   }
 }
 
@@ -73,5 +89,11 @@ export function createElement(type, attributes, ...children) {
 }
 
 export function render (component, parentElement) {
-  return parentElement.appendChild(component.root);
+  // 创建需要变更的区域
+  let range = document.createRange();
+  range.setStart(parentElement, 0); // 为 0 ，parentElement 的第一个节点到最后一个节点
+  range.setEnd(parentElement, parentElement.childNodes.length);
+  range.deleteContents();// 清空
+
+  component[RENDER_TO_DOM](range);
 }
