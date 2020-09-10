@@ -7,21 +7,26 @@ class MyComponent extends Component {
       a: 1,
       b: 2
     }
-    this.changeState();
+    // this.changeState();
   }
 
-  changeState() {
-    setTimeout(() => {
-      console.log('change');
-      this.state = {...this.state, a: 10}
-    }, 2000);
-  }
+  // changeState() {
+  //   setTimeout(() => {
+  //     console.log('change');
+  //     this.state = {...this.state, a: 10}
+  //   }, 2000);
+  // }
 
   render() {
     return (
-      <div>
+      <div class="wrapper">
         <h1>my component</h1>
         <span>{this.state.a.toString()}</span>
+        <br/>
+        <button onClick={() => { this.setState({a: this.state.a + 1 }) } }>add</button>
+        <br/>
+        <span>{this.state.b.toString()}</span>
+        <br/>
         {this.children}
       </div>
     )
