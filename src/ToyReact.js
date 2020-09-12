@@ -64,7 +64,7 @@ export class Component {
   }
 
   get vchildren () {
-
+    return this.children.map(child => child.vdom);
   }
 }
 
