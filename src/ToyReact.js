@@ -1,46 +1,5 @@
 const RENDER_TO_DOM = Symbol('render to DOM');
 
-class ElementWrapper {
-  constructor (type) {
-    this.root = document.createElement(type);
-  }
-
-  setAttribute(name, value) {
-    if (name.match(/^on([\s\S]+)$/)) {
-      this.root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value);
-    } else {
-      if (name === 'className') {
-        this.root.setAttribute('class', value);
-      } else {
-        this.root.setAttribute(name, value);
-      }
-    }
-  }
-
-  appendChild(component) {
-    let range = document.createRange();
-    range.setStart(this.root, this.root.childNodes.length); // 为 0 ，parentElement 的第一个节点到最后一个节点
-    range.setEnd(this.root, this.root.childNodes.length);
-    range.deleteContents();// 清空
-    component[RENDER_TO_DOM](range);
-  }
-
-  [RENDER_TO_DOM](range) {
-    range.deleteContents();
-    range.insertNode(this.root);
-  }
-}
-
-class TextWrapper {
-  constructor (content) {
-    this.root = document.createTextNode(content);
-  }
-
-  [RENDER_TO_DOM](range) {
-    range.deleteContents();
-    range.insertNode(this.root);
-  }
-}
 
 /**
  * 供外部继承的自定义组件
@@ -98,6 +57,101 @@ export class Component {
     }
     merge(this.state, newState);
     this.reRender();
+  }
+
+  get vdom () {
+    return this.render().vdom;
+  }
+
+  get vchildren () {
+
+  }
+}
+
+class ElementWrapper extends Component {
+  constructor (type) {
+    super(type);
+    this.type = type;
+  }
+
+  // setAttribute(name, value) {
+  //   if (name.match(/^on([\s\S]+)$/)) {
+  //     this.root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value);
+  //   } else {
+  //     if (name === 'className') {
+  //       this.root.setAttribute('class', value);
+  //     } else {
+  //       this.root.setAttribute(name, value);
+  //     }
+  //   }
+  // }
+
+  // appendChild(component) {
+  //   let range = document.createRange();
+  //   range.setStart(this.root, this.root.childNodes.length); // 为 0 ，parentElement 的第一个节点到最后一个节点
+  //   range.setEnd(this.root, this.root.childNodes.length);
+  //   range.deleteContents();// 清空
+  //   component[RENDER_TO_DOM](range);
+  // }
+
+  [RENDER_TO_DOM](range) {
+    range.deleteContents();
+
+    let root = document.createElement(this.type);
+
+    for (let name in this.props) {
+      let value = this.props[name];
+      if (name.match(/^on([\s\S]+)$/)) {
+        root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value);
+      } else {
+        if (name === 'className') {
+          root.setAttribute('class', value);
+        } else {
+          root.setAttribute(name, value);
+        }
+      }
+    }
+
+    for (let child of this.children) {
+      let child_range = document.createRange();
+      child_range.setStart(root, root.childNodes.length); // 为 0 ，parentElement 的第一个节点到最后一个节点
+      child_range.setEnd(root, root.childNodes.length);
+      child_range.deleteContents();// 清空
+      child[RENDER_TO_DOM](child_range);
+    }
+
+    range.insertNode(root);
+  }
+
+  get vdom() {
+    return this;
+    // {
+    //   type: this.type,
+    //   props: this.props,
+    //   children: this.children.map(child => child.vdom) // 组件 => VDOM
+    // }
+  }
+}
+
+class TextWrapper extends Component {
+  constructor (content) {
+    super(content);
+    this.type = "#text";
+    this.content = content;
+    this.root = document.createTextNode(content);
+  }
+
+  [RENDER_TO_DOM](range) {
+    range.deleteContents();
+    range.insertNode(this.root);
+  }
+
+  get vdom () {
+    return this
+    // {
+    //   type: '#text',
+    //   content: this.content
+    // }
   }
 }
 
